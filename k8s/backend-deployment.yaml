@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: task-manager
+spec:
+  replicas: 2               # 2 copies for high availability
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: 857256953263.dkr.ecr.ap-south-1.amazonaws.com/task-manager-backend:latest
+          ports:
+            - containerPort: 5000
+          env:
+            - name: DB_HOST
+              value: "mysql-service"        # The MySQL Service DNS name
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_PASSWORD
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_DATABASE
+            - name: PORT
+              value: "5000"
+          livenessProbe:              # Kubernetes checks this to know if app is alive
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 30   # Wait 30s before first check (DB retry needs time)
+            periodSeconds: 10
+          readinessProbe:             # Kubernetes checks this before sending traffic
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "125m"
+            limits:
+              memory: "512Mi"
+              cpu: "250m"

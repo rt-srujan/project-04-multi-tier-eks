@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: task-manager
+spec:
+  accessModes:
+    - ReadWriteOnce        # Only one pod can write at a time (correct for databases)
+  storageClassName: gp2    # AWS EBS gp2 SSD — automatically provisioned by EKS
+  resources:
+    requests:
+      storage: 5Gi         # 5 gigabytes of storage
